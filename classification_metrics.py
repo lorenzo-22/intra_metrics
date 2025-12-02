@@ -109,9 +109,17 @@ def main():
     print(f"  Labels shape: {labels.shape}")
     
     # Align data (ensure same order)
-    # Assuming results 'Name' column matches labels index
-    if 'Name' in results.columns:
-        results = results.set_index('Name')
+    # Assuming results have a protein ID column that matches labels index
+    id_col = None
+    for col in ['Name', 'ID', 'Protein', 'protein', 'Feature']:
+        if col in results.columns:
+            id_col = col
+            break
+    
+    if id_col:
+        results = results.set_index(id_col)
+    else:
+        print(f"Warning: No recognized ID column found in results. Using existing index.")
     
     # Get common features
     common_features = results.index.intersection(labels.index)
