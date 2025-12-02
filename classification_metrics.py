@@ -75,9 +75,9 @@ def main():
     )
     
     # Required arguments - use names matching config.cfg
-    parser.add_argument('--methods.results', required=True, dest='results',
+    parser.add_argument('--results', required=True, dest='results',
                         help='Path to method results CSV file')
-    parser.add_argument('--data.true_labels', required=True, dest='labels',
+    parser.add_argument('--data.true_labels_proteins', required=True, dest='labels',
                         help='Path to true labels CSV file')
     parser.add_argument('--output_dir', required=True,
                         help='Output directory')
@@ -121,7 +121,13 @@ def main():
     labels = labels.loc[common_features]
     
     # Extract true labels
-    y_true = labels['is_differentially_expressed'].values
+    # Support both 'label' and 'is_differentially_expressed' column names
+    if 'label' in labels.columns:
+        y_true = labels['label'].values
+    elif 'is_differentially_expressed' in labels.columns:
+        y_true = labels['is_differentially_expressed'].values
+    else:
+        y_true = labels.iloc[:, 0].values  # Use first column if neither exists
     
     # Extract predictions
     if args.prediction_column in results.columns:
