@@ -133,15 +133,33 @@ def main():
     if args.prediction_column in results.columns:
         y_pred = results[args.prediction_column].astype(int).values
     else:
-        # If no prediction column, use adjusted p-value threshold
-        if args.score_column in results.columns:
+        # Auto-detect p-value column
+        p_val_col = None
+        for col in ['P.Value', 'p_value', 'pval', 'p-value', 'adj.P.Val']:
+            if col in results.columns:
+                p_val_col = col
+                break
+        
+        if p_val_col:
+            y_pred = (results[p_val_col] < args.fdr_threshold).astype(int).values
+        elif args.score_column in results.columns:
             y_pred = (results[args.score_column] < args.fdr_threshold).astype(int).values
         else:
-            raise ValueError(f"Neither '{args.prediction_column}' nor '{args.score_column}' found in results")
+            raise ValueError(f"Could not find p-value column. Checked: P.Value, p_value, pval, p-value, adj.P.Val, {args.score_column}")
     
-    # Extract probability scores (use 1 - adj.P.Val as score, higher = more likely DE)
+    # Extract probability scores (use 1 - p-value as score, higher = more likely DE)
     y_score = None
-    if args.score_column in results.columns:
+    # Auto-detect p-value column for scoring
+    p_val_col = None
+    for col in ['P.Value', 'p_value', 'pval', 'p-value', 'adj.P.Val']:
+        if col in results.columns:
+            p_val_col = col
+            break
+    
+    if p_val_col:
+        # For p-values, we need to invert them (lower p-value = higher confidence)
+        y_score = 1 - results[p_val_col].values
+    elif args.score_column in results.columns:
         # For p-values, we need to invert them (lower p-value = higher confidence)
         y_score = 1 - results[args.score_column].values
     
